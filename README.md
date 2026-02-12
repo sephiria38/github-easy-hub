@@ -1,2 +1,0 @@
-# github-easy-hub
-GitHubAPIつかっていろいろやってみる
