@@ -25,6 +25,88 @@ export default function IssuesPage() {
     title: "",
     body: "",
   });
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("blank");
+
+  // Issue テンプレート
+  const issueTemplates = {
+    blank: {
+      name: "空白",
+      body: "",
+    },
+    feature: {
+      name: "機能リクエスト",
+      body: `## Overview / 概要
+[アプリの目的・何を解決するか]
+
+## Tech Stack / 技術スタック
+- Framework: 
+- Language: 
+- Key Libraries: 
+- API: 
+- Deployment: 
+
+## Requirements / 機能要件
+- [ ] 
+
+## API Specification / API仕様
+[エンドポイント、リクエスト/レスポンス形式など]
+
+## UI Specification / UI仕様
+[画面構成、コンポーネント、表示ルール]
+
+## Environment Variables / 環境変数
+- \`KEY_NAME\`: 用途
+
+## Language / 言語指示
+All code comments, UI text, error messages, and documentation must be written in Japanese (日本語).`,
+    },
+    bug: {
+      name: "バグ報告",
+      body: `## 問題の説明 / Description
+[バグの詳細な説明]
+
+## 再現手順 / Steps to Reproduce
+1. 
+2. 
+3. 
+
+## 期待される動作 / Expected Behavior
+[本来どう動くべきか]
+
+## 実際の動作 / Actual Behavior
+[実際にどう動いているか]
+
+## 環境情報 / Environment
+- OS: 
+- ブラウザ: 
+- バージョン: 
+
+## スクリーンショット / Screenshots
+[スクリーンショットがあれば添付]
+
+## 追加情報 / Additional Context
+[その他関連する情報]`,
+    },
+    task: {
+      name: "タスク",
+      body: `## タスク概要 / Task Overview
+[タスクの目的と背景]
+
+## 詳細 / Details
+[具体的な作業内容]
+
+## チェックリスト / Checklist
+- [ ] 
+- [ ] 
+- [ ] 
+
+## 関連情報 / Related Information
+[関連するIssueやPR、ドキュメントへのリンク]
+
+## 完了条件 / Definition of Done
+[このタスクが完了したと判断できる条件]`,
+    },
+  };
 
   useEffect(() => {
     loadRepos();
@@ -71,12 +153,19 @@ export default function IssuesPage() {
       showToast("Issueを作成しました！", "success");
       setShowCreateForm(false);
       setFormData({ title: "", body: "" });
+      setSelectedTemplate("blank");
       loadIssues();
     } catch (error: any) {
       showToast(error.message, "error");
     } finally {
       setCreating(false);
     }
+  };
+
+  const handleTemplateChange = (template: string) => {
+    setSelectedTemplate(template);
+    const templateKey = template as keyof typeof issueTemplates;
+    setFormData({ ...formData, body: issueTemplates[templateKey].body });
   };
 
   const handleClose = async (issue: GitHubIssue) => {
@@ -163,6 +252,22 @@ export default function IssuesPage() {
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  テンプレートを選択
+                </label>
+                <select
+                  value={selectedTemplate}
+                  onChange={(e) => handleTemplateChange(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                >
+                  {Object.entries(issueTemplates).map(([key, template]) => (
+                    <option key={key} value={key}>
+                      {template.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   タイトル *
                 </label>
                 <input
@@ -185,7 +290,7 @@ export default function IssuesPage() {
                     setFormData({ ...formData, body: e.target.value })
                   }
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  rows={5}
+                  rows={15}
                 />
               </div>
               <button
