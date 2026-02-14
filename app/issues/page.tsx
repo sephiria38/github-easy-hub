@@ -6,36 +6,15 @@ import { useToken } from "@/hooks/useToken";
 import { useToast } from "@/components/Toast";
 import type { GitHubRepo, GitHubIssue } from "@/lib/types";
 
-export default function IssuesPage() {
-  const { token } = useToken();
-  const { client, user } = useGitHub(token);
-  const { showToast } = useToast();
-
-  const [repos, setRepos] = useState<GitHubRepo[]>([]);
-  const [issues, setIssues] = useState<GitHubIssue[]>([]);
-  const [selectedRepo, setSelectedRepo] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [selectedIssue, setSelectedIssue] = useState<GitHubIssue | null>(null);
-  const [comment, setComment] = useState("");
-  const [addingComment, setAddingComment] = useState(false);
-  
-  const [formData, setFormData] = useState({
-    title: "",
+// Issue テンプレート
+const issueTemplates = {
+  blank: {
+    name: "空白",
     body: "",
-  });
-  const [selectedTemplate, setSelectedTemplate] = useState<string>("blank");
-
-  // Issue テンプレート
-  const issueTemplates = {
-    blank: {
-      name: "空白",
-      body: "",
-    },
-    feature: {
-      name: "機能リクエスト",
-      body: `## Overview / 概要
+  },
+  feature: {
+    name: "機能リクエスト",
+    body: `## Overview / 概要
 [アプリの目的・何を解決するか]
 
 ## Tech Stack / 技術スタック
@@ -59,10 +38,10 @@ export default function IssuesPage() {
 
 ## Language / 言語指示
 All code comments, UI text, error messages, and documentation must be written in Japanese (日本語).`,
-    },
-    bug: {
-      name: "バグ報告",
-      body: `## 問題の説明 / Description
+  },
+  bug: {
+    name: "バグ報告",
+    body: `## 問題の説明 / Description
 [バグの詳細な説明]
 
 ## 再現手順 / Steps to Reproduce
@@ -86,10 +65,10 @@ All code comments, UI text, error messages, and documentation must be written in
 
 ## 追加情報 / Additional Context
 [その他関連する情報]`,
-    },
-    task: {
-      name: "タスク",
-      body: `## タスク概要 / Task Overview
+  },
+  task: {
+    name: "タスク",
+    body: `## タスク概要 / Task Overview
 [タスクの目的と背景]
 
 ## 詳細 / Details
@@ -105,8 +84,29 @@ All code comments, UI text, error messages, and documentation must be written in
 
 ## 完了条件 / Definition of Done
 [このタスクが完了したと判断できる条件]`,
-    },
-  };
+  },
+} as const;
+
+export default function IssuesPage() {
+  const { token } = useToken();
+  const { client, user } = useGitHub(token);
+  const { showToast } = useToast();
+
+  const [repos, setRepos] = useState<GitHubRepo[]>([]);
+  const [issues, setIssues] = useState<GitHubIssue[]>([]);
+  const [selectedRepo, setSelectedRepo] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [selectedIssue, setSelectedIssue] = useState<GitHubIssue | null>(null);
+  const [comment, setComment] = useState("");
+  const [addingComment, setAddingComment] = useState(false);
+  
+  const [formData, setFormData] = useState({
+    title: "",
+    body: "",
+  });
+  const [selectedTemplate, setSelectedTemplate] = useState<keyof typeof issueTemplates>("blank");
 
   useEffect(() => {
     loadRepos();
@@ -162,10 +162,9 @@ All code comments, UI text, error messages, and documentation must be written in
     }
   };
 
-  const handleTemplateChange = (template: string) => {
+  const handleTemplateChange = (template: keyof typeof issueTemplates) => {
     setSelectedTemplate(template);
-    const templateKey = template as keyof typeof issueTemplates;
-    setFormData({ ...formData, body: issueTemplates[templateKey].body });
+    setFormData(prev => ({ ...prev, body: issueTemplates[template].body }));
   };
 
   const handleClose = async (issue: GitHubIssue) => {
@@ -256,7 +255,7 @@ All code comments, UI text, error messages, and documentation must be written in
                 </label>
                 <select
                   value={selectedTemplate}
-                  onChange={(e) => handleTemplateChange(e.target.value)}
+                  onChange={(e) => handleTemplateChange(e.target.value as keyof typeof issueTemplates)}
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 >
                   {Object.entries(issueTemplates).map(([key, template]) => (
