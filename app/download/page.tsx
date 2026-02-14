@@ -69,16 +69,18 @@ export default function DownloadPage() {
     const branch = repo?.default_branch ?? "main";
     try {
       const response = await fetch(
-        `https://api.github.com/repos/${user.login}/${selectedRepo}/zipball/${branch}`,
+        `/api/download?owner=${encodeURIComponent(user.login)}&repo=${encodeURIComponent(selectedRepo)}&branch=${encodeURIComponent(branch)}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            Accept: "application/vnd.github+json",
           },
         }
       );
       if (!response.ok) {
-        throw new Error(`ダウンロードに失敗しました: ${response.status}`);
+        const errorData = await response.json().catch(() => null);
+        throw new Error(
+          errorData?.error || `ダウンロードに失敗しました: ${response.status}`
+        );
       }
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
