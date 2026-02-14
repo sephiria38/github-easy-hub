@@ -63,11 +63,36 @@ export default function DownloadPage() {
     }
   };
 
-  const downloadZip = () => {
-    if (!selectedRepo || !user) return;
-    const zipUrl = `https://github.com/${user.login}/${selectedRepo}/archive/refs/heads/main.zip`;
-    window.open(zipUrl, "_blank");
-    showToast("ZIPファイルをダウンロード中...", "info");
+  const downloadZip = async () => {
+    if (!selectedRepo || !user || !token) return;
+    const repo = repos.find((r) => r.name === selectedRepo);
+    const branch = repo?.default_branch ?? "main";
+    try {
+      const response = await fetch(
+        `https://api.github.com/repos/${user.login}/${selectedRepo}/zipball/${branch}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/vnd.github+json",
+          },
+        }
+      );
+      if (!response.ok) {
+        throw new Error(`ダウンロードに失敗しました: ${response.status}`);
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${selectedRepo}-${branch}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      showToast("ZIPファイルをダウンロードしました", "info");
+    } catch (error: any) {
+      showToast(error.message, "error");
+    }
   };
 
   const navigateBack = () => {
